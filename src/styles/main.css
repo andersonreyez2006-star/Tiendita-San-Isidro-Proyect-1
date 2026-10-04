@@ -1,0 +1,4 @@
+/* Archivo maestro de estilos - Tiendita San Isidro */
+@import './variables.css';
+@import './layout.css';
+@import './components.css';

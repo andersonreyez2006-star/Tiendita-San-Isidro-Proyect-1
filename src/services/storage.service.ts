@@ -1,14 +1,19 @@
-import { Categoria, Producto, Venta, DetalleVenta, CartItem } from './types';
+import { Categoria, Producto, Venta, DetalleVenta, CartItem } from '../types';
 
 const STORAGE_KEYS = {
   CATEGORIAS: 'tiendita_categorias',
   PRODUCTOS: 'tiendita_productos',
   VENTAS: 'tiendita_ventas',
   DETALLE_VENTAS: 'tiendita_detalle_ventas'
-};
+} as const;
 
-export class DatabaseStore {
+/**
+ * Servicio de base de datos local y lógica transaccional
+ */
+export class DatabaseService {
+  // -------------------------------------------------------------
   // Categorias
+  // -------------------------------------------------------------
   static getCategorias(): Categoria[] {
     const data = localStorage.getItem(STORAGE_KEYS.CATEGORIAS);
     return data ? JSON.parse(data) : [];
@@ -34,7 +39,9 @@ export class DatabaseStore {
     return true;
   }
 
+  // -------------------------------------------------------------
   // Productos
+  // -------------------------------------------------------------
   static getProductos(): Producto[] {
     const data = localStorage.getItem(STORAGE_KEYS.PRODUCTOS);
     return data ? JSON.parse(data) : [];
@@ -65,7 +72,9 @@ export class DatabaseStore {
     localStorage.setItem(STORAGE_KEYS.PRODUCTOS, JSON.stringify(list));
   }
 
+  // -------------------------------------------------------------
   // Ventas y Detalle_Venta
+  // -------------------------------------------------------------
   static getVentas(): Venta[] {
     const data = localStorage.getItem(STORAGE_KEYS.VENTAS);
     return data ? JSON.parse(data) : [];
@@ -78,10 +87,10 @@ export class DatabaseStore {
 
   static registrarVenta(items: CartItem[]): Venta {
     if (items.length === 0) {
-      throw new Error('El carrito está vacío.');
+      throw new Error('El ticket está vacío.');
     }
 
-    // Verificar y descontar stock
+    // Validar y actualizar stock
     const productos = this.getProductos();
     for (const item of items) {
       const prod = productos.find(p => p.id_producto === item.producto.id_producto);
@@ -89,13 +98,13 @@ export class DatabaseStore {
         throw new Error(`El producto con ID ${item.producto.id_producto} no fue encontrado.`);
       }
       if (prod.stock < item.cantidad) {
-        throw new Error(`Stock insuficiente para "${prod.nombre}". Disponible: ${prod.stock}`);
+        throw new Error(`Stock insuficiente para "${prod.nombre}". Existencias: ${prod.stock}`);
       }
       prod.stock -= item.cantidad;
     }
     localStorage.setItem(STORAGE_KEYS.PRODUCTOS, JSON.stringify(productos));
 
-    // Crear Venta
+    // Registrar Venta
     const ventas = this.getVentas();
     const nextVentaId = ventas.length > 0 ? Math.max(...ventas.map(v => v.id_venta)) + 1 : 1;
     const total = items.reduce((sum, item) => sum + (item.producto.precio_venta * item.cantidad), 0);
@@ -118,7 +127,7 @@ export class DatabaseStore {
     ventas.unshift(nuevaVenta);
     localStorage.setItem(STORAGE_KEYS.VENTAS, JSON.stringify(ventas));
 
-    // Crear Detalle_Venta
+    // Registrar Detalle_Venta
     const detalles = this.getDetalles();
     let nextDetalleId = detalles.length > 0 ? Math.max(...detalles.map(d => d.id_detalle)) + 1 : 1;
 
