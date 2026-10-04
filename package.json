@@ -1,0 +1,16 @@
+{
+  "name": "tiendita-san-isidro",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5180",
+    "build": "tsc && vite build",
+    "preview": "vite preview --port 5180 --host",
+    "tunnel": "& 'C:\\Program Files (x86)\\cloudflared\\cloudflared.exe' tunnel --url http://localhost:5180"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "vite": "^5.2.11"
+  }
+}

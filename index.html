@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tiendita San Isidro - Sistema de Gestión</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Barra Superior -->
+    <header class="navbar">
+      <div class="brand">
+        <div class="logo-icon">🏪</div>
+        <div>
+          <h1 class="brand-title">Tiendita San Isidro</h1>
+          <p class="brand-subtitle">Control de Inventario y Ventas</p>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="badge badge-secure">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          Conexión Segura HTTPS (Cloudflare)
+        </span>
+      </div>
+    </header>
+
+    <!-- Navegación Principal -->
+    <nav class="tabs-nav">
+      <button class="tab-btn active" data-tab="pos">
+        <span class="icon">🛒</span> Caja / Punto de Venta
+      </button>
+      <button class="tab-btn" data-tab="productos">
+        <span class="icon">📦</span> Productos
+      </button>
+      <button class="tab-btn" data-tab="categorias">
+        <span class="icon">🏷️</span> Categorías
+      </button>
+      <button class="tab-btn" data-tab="ventas">
+        <span class="icon">📜</span> Historial de Ventas
+      </button>
+    </nav>
+
+    <!-- Contenedor Principal de Vistas -->
+    <main class="main-container">
+      
+      <!-- 1. VISTA: PUNTO DE VENTA (POS) -->
+      <section id="view-pos" class="view active">
+        <div class="pos-layout">
+          <!-- Catálogo para venta -->
+          <div class="pos-catalog card">
+            <div class="card-header">
+              <h2>Seleccionar Productos</h2>
+              <div class="search-bar">
+                <input type="text" id="pos-search" placeholder="Buscar por nombre...">
+                <select id="pos-cat-filter">
+                  <option value="">Todas las categorías</option>
+                </select>
+              </div>
+            </div>
+            <div id="pos-products-grid" class="products-grid">
+              <!-- Renderizado dinámico -->
+            </div>
+          </div>
+
+          <!-- Ticket / Carrito -->
+          <div class="pos-ticket card">
+            <div class="card-header">
+              <h2>Ticket de Venta</h2>
+              <button id="clear-cart-btn" class="btn btn-secondary btn-sm">Vaciar</button>
+            </div>
+            <div id="pos-cart-items" class="cart-items-list">
+              <!-- Renderizado dinámico -->
+            </div>
+            <div class="ticket-footer">
+              <div class="summary-line">
+                <span>Artículos:</span>
+                <span id="cart-item-count" class="bold">0</span>
+              </div>
+              <div class="summary-line total-line">
+                <span>Total a Pagar:</span>
+                <span id="cart-total" class="total-amount">$0.00</span>
+              </div>
+              <button id="checkout-btn" class="btn btn-primary btn-block btn-lg" disabled>
+                Registrar y Cobrar Venta
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. VISTA: PRODUCTOS -->
+      <section id="view-productos" class="view">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Catálogo de Productos</h2>
+              <p class="section-desc">Gestiona tus artículos, precios y existencias.</p>
+            </div>
+            <button id="open-new-product-modal" class="btn btn-primary">
+              + Nuevo Producto
+            </button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>Categoría</th>
+                  <th>Precio Venta</th>
+                  <th>Stock</th>
+                  <th>Estado</th>
+                  <th class="text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="products-table-body">
+                <!-- Renderizado dinámico -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. VISTA: CATEGORÍAS -->
+      <section id="view-categorias" class="view">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Categorías</h2>
+              <p class="section-desc">Organiza tus productos en grupos limpios y claros.</p>
+            </div>
+            <button id="open-new-category-modal" class="btn btn-primary">
+              + Nueva Categoría
+            </button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre de la Categoría</th>
+                  <th>Cantidad de Productos</th>
+                  <th class="text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="categories-table-body">
+                <!-- Renderizado dinámico -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. VISTA: HISTORIAL DE VENTAS -->
+      <section id="view-ventas" class="view">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Registro de Ventas</h2>
+              <p class="section-desc">Consulta los tickets realizados y su desglose detallado.</p>
+            </div>
+            <div class="stats-badge">
+              Total Acumulado: <span id="sales-grand-total" class="bold">$0.00</span>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>No. Ticket</th>
+                  <th>Fecha y Hora</th>
+                  <th>Total</th>
+                  <th class="text-right">Detalle</th>
+                </tr>
+              </thead>
+              <tbody id="sales-table-body">
+                <!-- Renderizado dinámico -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- MODAL: NUEVA CATEGORÍA -->
+    <div id="modal-category" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Nueva Categoría</h3>
+          <button class="close-modal">&times;</button>
+        </div>
+        <form id="form-category">
+          <div class="form-group">
+            <label for="cat-name">Nombre de la categoría</label>
+            <input type="text" id="cat-name" required placeholder="Ej: Bebidas">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary close-modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar Categoría</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: NUEVO / EDITAR PRODUCTO -->
+    <div id="modal-product" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modal-product-title">Nuevo Producto</h3>
+          <button class="close-modal">&times;</button>
+        </div>
+        <form id="form-product">
+          <input type="hidden" id="prod-id" value="">
+          <div class="form-group">
+            <label for="prod-name">Nombre del Producto</label>
+            <input type="text" id="prod-name" required placeholder="Nombre descriptivo">
+          </div>
+          <div class="form-group">
+            <label for="prod-category">Categoría</label>
+            <select id="prod-category" required>
+              <option value="" disabled selected>Selecciona una categoría</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prod-price">Precio de Venta ($)</label>
+              <input type="number" id="prod-price" step="0.01" min="0" required placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label for="prod-stock">Stock Inicial</label>
+              <input type="number" id="prod-stock" min="0" required placeholder="0">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary close-modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar Producto</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: DETALLE DE TICKET DE VENTA -->
+    <div id="modal-sale-detail" class="modal">
+      <div class="modal-content modal-lg">
+        <div class="modal-header">
+          <h3 id="modal-ticket-title">Detalle de Ticket</h3>
+          <button class="close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="ticket-meta">
+            <p><strong>Fecha/Hora:</strong> <span id="ticket-date"></span></p>
+            <p><strong>Estado:</strong> <span class="badge badge-success">Pagado</span></p>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Cant.</th>
+                <th>Precio Unit.</th>
+                <th class="text-right">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody id="ticket-items-body"></tbody>
+            <tfoot>
+              <tr>
+                <th colspan="3" class="text-right">Total Pagado:</th>
+                <th id="ticket-total-display" class="text-right"></th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary close-modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenedor de Notificaciones Toast -->
+    <div id="toast-container"></div>
+  </div>
+
+  <script type="module" src="./src/main.ts"></script>
+</body>
+</html>
