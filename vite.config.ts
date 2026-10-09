@@ -5,7 +5,10 @@ export default defineConfig({
     host: true,
     port: 5180,
     strictPort: true,
-    allowedHosts: true
+    allowedHosts: true,
+    proxy: {
+      '/api': 'http://localhost:3001'
+    }
   },
   preview: {
     host: true,

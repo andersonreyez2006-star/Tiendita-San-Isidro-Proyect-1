@@ -4,45 +4,35 @@ Esta guía explica cómo ejecutar la aplicación de forma local, cómo compartir
 
 ---
 
-## 💻 1. Ejecución Local
+## Ejecución local
 
-Para iniciar el servidor en tu computadora:
+Necesitas Node.js y una instancia MySQL/MariaDB accesible. Importa `database/schema.sql` en una base de datos antes de iniciar la API.
 
 ```powershell
-# 1. Instalar dependencias (solo si es la primera vez o en una máquina nueva)
-npm run install
+# Instalar dependencias
+npm install
 
-# 2. Compilar el proyecto para verificar que no haya errores
+# Copiar .env.example a .env y editar DB_HOST, DB_USER, DB_PASSWORD y DB_NAME
+# Iniciar el backend en una terminal
+npm run server
+
+# En otra terminal, frontend con proxy /api hacia el backend
+npm run dev
+
+# Compilar el frontend
 npm run build
-
-# 3. Iniciar el servidor local
-npm run preview
 ```
 
-El sistema estará accesible localmente en:
-`http://localhost:5180`
+La interfaz estará en `http://localhost:5180`. Verifica la API y la conexión SQL en `http://localhost:3001/api/health`. `npm run preview` sirve el frontend compilado, pero no incluye el proxy de desarrollo; configura `VITE_API_URL` para apuntar a la URL pública de la API antes de compilar.
 
----
+## Despliegue
 
-## 🔒 2. Compartir por Internet con Cloudflare Tunnel (HTTPS)
+Cloudflare Pages publica únicamente el frontend estático. El backend Node.js y MySQL/MariaDB deben estar en servicios desplegados y activos por separado; Pages no ejecuta `server/index.js`.
 
-Para que cualquier persona pueda ingresar desde cualquier lugar del mundo con conexión cifrada **HTTPS**:
+1. Despliega el backend Node.js desde el repositorio (incluidos `package.json`, `package-lock.json` y `server/`) en un hosting que soporte Node.js, con comando de inicio `npm start`. Configura sus variables `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `PORT` y `CORS_ORIGINS`.
+2. Importa `database/schema.sql` en MySQL/MariaDB. Configura firewall y permisos para que solo el backend llegue a la base de datos.
+3. Protege la API con autenticación o un proxy de acceso antes de exponerla públicamente. La API actual no autentica usuarios; CORS no reemplaza autenticación.
+4. Configura el secreto `VITE_API_URL` en el repositorio de GitHub como la URL HTTPS de la API terminada en `/api` (por ejemplo `https://api.ejemplo.com/api`). El workflow lo usa al compilar el frontend.
+5. Configura `CORS_ORIGINS` con el origen HTTPS del sitio, sin la ruta `/api`, y publica el frontend en Cloudflare Pages.
 
-1. Deja corriendo el servidor local (`npm run preview`).
-2. Abre otra pestaña o ventana de PowerShell en la misma carpeta del proyecto.
-3. Ejecuta el túnel de Cloudflare:
-   ```powershell
-   npm run tunnel
-   ```
-4. Cloudflare generará un enlace seguro como:
-   `https://[nombre-aleatorio].trycloudflare.com`
-5. Comparte ese enlace con cualquier persona para que use el sistema.
-
----
-
-## 🗄️ 3. Conexión con Hosting y Base de Datos
-
-Cuando vayas a subir el proyecto a tu proveedor de hosting:
-
-1. Importa el archivo [`database/schema.sql`](file:///c:/Users/ander/OneDrive%20-%20Universidad%20Don%20Bosco/Escritorio/Tiendita%20San%20Isidro/database/schema.sql) en el phpMyAdmin o consola MySQL de tu hosting.
-2. Sube los archivos generados dentro de la carpeta `dist/` a la carpeta `public_html` de tu hosting web.
+No guardes credenciales de base de datos en variables `VITE_*`, archivos del frontend o el repositorio. No uses un túnel temporal de desarrollo como alojamiento permanente.

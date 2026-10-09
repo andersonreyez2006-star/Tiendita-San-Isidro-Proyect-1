@@ -22,10 +22,11 @@ jobs:
         run: npm ci
       - name: Compilar
         run: npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
       - name: Publicar
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: '1680a32d4f232edbbfb4375ff444091a'
           command: pages deploy dist --project-name=tiendita-san-isidro --branch=main
-

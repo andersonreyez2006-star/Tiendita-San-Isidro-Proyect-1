@@ -2,6 +2,8 @@
 
 Este directorio contiene los scripts y definiciones de la base de datos relacional para el sistema de **Tiendita San Isidro**.
 
+Importar este esquema solo crea las tablas; no conecta por sí mismo la aplicación. La API Node.js usa las credenciales configuradas en su entorno y es el único componente que debe conectarse a MySQL/MariaDB. Consulta [`docs/GUIA_DESPLIEGUE.md`](../docs/GUIA_DESPLIEGUE.md) para configurar y desplegar el backend.
+
 ---
 
 ## 📁 Archivos en este directorio

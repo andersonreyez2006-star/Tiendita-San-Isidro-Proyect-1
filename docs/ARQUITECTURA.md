@@ -1,70 +1,35 @@
-# 🏛️ Arquitectura del Proyecto - Tiendita San Isidro
+# Arquitectura del Proyecto - Tiendita San Isidro
 
-Este documento describe la estructura modular, separación de responsabilidades y flujo de datos de la aplicación **Tiendita San Isidro**.
+La aplicación sigue una arquitectura cliente/API/base de datos. El navegador no se conecta directamente a MySQL: todas las consultas pasan por Express, que mantiene las credenciales fuera del código público.
 
----
+## Componentes
 
-## 📂 Organización de Directorios
+- `src/`: frontend TypeScript. Las vistas (`src/ui/`) usan `DatabaseService` (`src/services/storage.service.ts`) para enviar solicitudes HTTP a `/api`.
+- `server/index.js`: API Express para categorías, productos y ventas. Valida entradas y devuelve errores HTTP explícitos.
+- `server/db.js`: pool MySQL compartido por el servidor, configurado únicamente con variables de entorno.
+- `database/schema.sql`: tablas y claves foráneas que deben existir antes de iniciar la API.
+- `vite.config.ts`: durante desarrollo reenvía `/api` desde Vite a `http://localhost:3001`.
 
-```text
-Tiendita San Isidro/
-├── database/                # Scripts y documentación de la base de datos relacional
-│   ├── README.md            # Guía para importar en hosting (cPanel/phpMyAdmin)
-│   └── schema.sql           # DDL relacional (Categorías, Productos, Ventas, Detalle_Venta)
-│
-├── docs/                    # Documentación técnica del proyecto
-│   ├── ARQUITECTURA.md      # Este documento (diseño modular y componentes)
-│   └── GUIA_DESPLIEGUE.md   # Guía de despliegue con Cloudflare Tunnel y hosting
-│
-├── src/                     # Código fuente de la aplicación (TypeScript / CSS)
-│   ├── styles/              # Módulos de estilos CSS organizados
-│   │   ├── variables.css    # Paleta de colores, sombras y radios
-│   │   ├── layout.css       # Contenedor, navbar, tabs y modales
-│   │   ├── components.css   # Botones, tablas, tarjetas, badges y toasts
-│   │   └── main.css         # Archivo maestro que unifica los estilos
-│   │
-│   ├── types/               # Modelos e interfaces de datos (TypeScript)
-│   │   ├── categoria.model.ts
-│   │   ├── producto.model.ts
-│   │   ├── venta.model.ts
-│   │   ├── cart.model.ts
-│   │   └── index.ts         # Exportador unificado de tipos
-│   │
-│   ├── services/            # Lógica de negocio y persistencia
-│   │   ├── storage.service.ts      # Transacciones, validación de stock y almacenamiento
-│   │   └── notification.service.ts # Mensajes emergentes (Toast)
-│   │
-│   ├── ui/                  # Vistas y controladores de interfaz
-│   │   ├── modals.ts        # Control central de apertura/cierre de modales
-│   │   ├── pos.view.ts      # Punto de Venta (Caja, selección de artículos y cobro)
-│   │   ├── products.view.ts # Catálogo, creación y edición de productos
-│   │   ├── categories.view.ts # Gestión de categorías
-│   │   └── sales.view.ts    # Historial de ventas y desglose de tickets
-│   │
-│   └── main.ts              # Punto de entrada y orquestador de navegación
-│
-├── index.html               # Plantilla HTML semántica
-├── package.json             # Dependencias y scripts de ejecución
-├── tsconfig.json            # Configuración del compilador TypeScript
-└── vite.config.ts           # Configuración del servidor de desarrollo y preview
-```
+## API
 
----
+| Método | Ruta | Función |
+|---|---|---|
+| GET | `/api/health` | Verifica API y conexión MySQL |
+| GET, POST | `/api/categorias` | Consultar y crear categorías |
+| DELETE | `/api/categorias/:id` | Eliminar categoría sin productos asociados |
+| GET, POST | `/api/productos` | Consultar y crear productos |
+| PUT, DELETE | `/api/productos/:id` | Actualizar y eliminar productos |
+| GET | `/api/ventas` | Consultar historial |
+| GET | `/api/ventas/:id` | Consultar ticket y sus detalles |
+| POST | `/api/ventas` | Registrar venta y descontar stock |
 
-## 🔄 Flujo de Datos
+El alta de una venta bloquea los productos seleccionados y registra encabezado, detalles y actualización de inventario en una sola transacción MySQL. Si falla alguna validación o consulta, se revierte toda la operación.
 
-1. **Gestión de Inventario:**
-   - La vista `CategoriesView` permite crear categorías limpias.
-   - La vista `ProductsView` vincula cada producto a una categoría existente con su precio y stock.
-   - Las operaciones se validan y almacenan mediante `DatabaseService`.
+## Flujo
 
-2. **Proceso de Venta (Caja / POS):**
-   - El cajero selecciona productos en `PosView`.
-   - Se calculan subtotales y total en tiempo real.
-   - Al hacer clic en **"Registrar y Cobrar Venta"**:
-     1. `DatabaseService.registrarVenta()` verifica que haya existencias suficientes de cada producto.
-     2. Se descuenta el stock de la tabla `productos`.
-     3. Se inserta el registro en `ventas` con fecha, hora y total.
-     4. Se insertan los registros en `detalle_venta` con cada producto, cantidad y subtotal.
-     5. Se notifica al usuario mediante `NotificationService`.
-     6. Se actualiza el inventario y el historial de ventas en `SalesView`.
+1. El navegador llama a la API; no guarda inventario ni ventas en `localStorage`.
+2. Express valida los datos y usa consultas parametrizadas en MySQL.
+3. MySQL aplica las claves foráneas y persiste los cambios para todos los dispositivos que usen la misma API.
+4. Para producción, el frontend estático y la API deben tener HTTPS, el servidor requiere acceso de red a MySQL y `CORS_ORIGINS` debe contener el origen real del sitio.
+
+La API no incorpora autenticación de usuarios. No se debe publicar abierta en Internet: protégela con autenticación/proxy de acceso (por ejemplo, Cloudflare Access) antes de habilitar operaciones de escritura.

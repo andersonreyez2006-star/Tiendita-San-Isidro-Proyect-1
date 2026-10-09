@@ -1,7 +1,8 @@
 import { DatabaseService } from '../services/storage.service';
 import { NotificationService } from '../services/notification.service';
-import { Producto } from '../types';
+import { Categoria, Producto } from '../types';
 import { ModalManager } from './modals';
+import { escapeHtml } from './html';
 
 export class ProductsView {
   private static tableBody = document.getElementById('products-table-body') as HTMLElement;
@@ -14,45 +15,55 @@ export class ProductsView {
 
   private static editingId: number | null = null;
 
-  static init(onUpdate?: () => void): void {
+  static init(onUpdate?: () => void | Promise<void>): void {
     document.getElementById('open-new-product-modal')?.addEventListener('click', () => {
-      this.openModal();
+      void this.openModal();
     });
 
-    this.form?.addEventListener('submit', (e) => {
+    this.form?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = this.inputName.value.trim();
       const catId = Number(this.selectCat.value);
       const price = Number(this.inputPrice.value);
       const stock = Number(this.inputStock.value);
 
-      if (this.editingId) {
-        DatabaseService.updateProducto({
-          id_producto: this.editingId,
-          nombre: name,
-          id_categoria: catId,
-          precio_venta: price,
-          stock: stock
-        });
-        NotificationService.success('Producto actualizado exitosamente.');
-      } else {
-        DatabaseService.addProducto({
-          nombre: name,
-          id_categoria: catId,
-          precio_venta: price,
-          stock: stock
-        });
-        NotificationService.success('Producto registrado exitosamente.');
-      }
+      try {
+        if (this.editingId) {
+          await DatabaseService.updateProducto({
+            id_producto: this.editingId,
+            nombre: name,
+            id_categoria: catId,
+            precio_venta: price,
+            stock
+          });
+          NotificationService.success('Producto actualizado exitosamente.');
+        } else {
+          await DatabaseService.addProducto({
+            nombre: name,
+            id_categoria: catId,
+            precio_venta: price,
+            stock
+          });
+          NotificationService.success('Producto registrado exitosamente.');
+        }
 
-      ModalManager.closeProductModal();
-      this.render();
-      onUpdate?.();
+        ModalManager.closeProductModal();
+        await this.render();
+        await onUpdate?.();
+      } catch (err) {
+        NotificationService.error(err instanceof Error ? err.message : 'No se pudo guardar el producto.');
+      }
     });
   }
 
-  static openModal(producto?: Producto): void {
-    const categories = DatabaseService.getCategorias();
+  static async openModal(producto?: Producto): Promise<void> {
+    let categories: Categoria[];
+    try {
+      categories = await DatabaseService.getCategorias();
+    } catch (err) {
+      NotificationService.error(err instanceof Error ? err.message : 'No se pudieron cargar las categorías.');
+      return;
+    }
     if (categories.length === 0) {
       NotificationService.error('Debes crear al menos una categoría antes de registrar productos.');
       ModalManager.openCategoryModal();
@@ -84,9 +95,18 @@ export class ProductsView {
     ModalManager.openProductModal();
   }
 
-  static render(): void {
-    const products = DatabaseService.getProductos();
-    const categories = DatabaseService.getCategorias();
+  static async render(): Promise<void> {
+    let products: Producto[];
+    let categories: Categoria[];
+    try {
+      [products, categories] = await Promise.all([
+        DatabaseService.getProductos(),
+        DatabaseService.getCategorias()
+      ]);
+    } catch (err) {
+      NotificationService.error(err instanceof Error ? err.message : 'No se pudieron cargar los productos.');
+      return;
+    }
     const catMap = new Map(categories.map(c => [c.id_categoria, c.nombre]));
 
     if (products.length === 0) {
@@ -116,8 +136,8 @@ export class ProductsView {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>#${p.id_producto}</td>
-        <td class="bold">${p.nombre}</td>
-        <td>${catMap.get(p.id_categoria) || 'Sin Categoría'}</td>
+        <td class="bold">${escapeHtml(p.nombre)}</td>
+        <td>${escapeHtml(catMap.get(p.id_categoria) || 'Sin Categoría')}</td>
         <td>$${p.precio_venta.toFixed(2)}</td>
         <td>${p.stock}</td>
         <td>${stockBadge}</td>
@@ -128,14 +148,18 @@ export class ProductsView {
       `;
 
       tr.querySelector(`[data-edit="${p.id_producto}"]`)?.addEventListener('click', () => {
-        this.openModal(p);
+        void this.openModal(p);
       });
 
-      tr.querySelector(`[data-delete="${p.id_producto}"]`)?.addEventListener('click', () => {
+      tr.querySelector(`[data-delete="${p.id_producto}"]`)?.addEventListener('click', async () => {
         if (confirm(`¿Estás seguro de eliminar el producto "${p.nombre}"?`)) {
-          DatabaseService.deleteProducto(p.id_producto);
-          NotificationService.success(`Producto "${p.nombre}" eliminado.`);
-          this.render();
+          try {
+            await DatabaseService.deleteProducto(p.id_producto);
+            NotificationService.success(`Producto "${p.nombre}" eliminado.`);
+            await this.render();
+          } catch (err) {
+            NotificationService.error(err instanceof Error ? err.message : 'No se pudo eliminar el producto.');
+          }
         }
       });
 
