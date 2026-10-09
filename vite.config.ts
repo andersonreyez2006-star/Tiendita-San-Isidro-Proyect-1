@@ -7,7 +7,16 @@ export default defineConfig({
     strictPort: true,
     allowedHosts: true,
     proxy: {
-      '/api': 'http://localhost:3001'
+      '/api': {
+        target: 'http://localhost:3001',
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            // The browser calls /api on the same origin, including through a Cloudflare tunnel.
+            // Drop Origin so Express does not reject the tunnel's temporary hostname via CORS.
+            proxyReq.removeHeader('origin');
+          });
+        }
+      }
     }
   },
   preview: {
