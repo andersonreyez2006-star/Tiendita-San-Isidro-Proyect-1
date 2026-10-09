@@ -1,6 +1,7 @@
 import { DatabaseService } from '../services/storage.service';
 import { NotificationService } from '../services/notification.service';
-import { CartItem, Producto } from '../types';
+import { CartItem, Categoria, Producto } from '../types';
+import { escapeHtml } from './html';
 
 export class PosView {
   private static productsGrid = document.getElementById('pos-products-grid') as HTMLElement;
@@ -15,8 +16,8 @@ export class PosView {
   private static cart: CartItem[] = [];
 
   static init(onSaleCompleted?: () => void): void {
-    this.searchInput?.addEventListener('input', () => this.renderCatalog());
-    this.catFilter?.addEventListener('change', () => this.renderCatalog());
+    this.searchInput?.addEventListener('input', () => void this.renderCatalog());
+    this.catFilter?.addEventListener('change', () => void this.renderCatalog());
 
     this.clearCartBtn?.addEventListener('click', () => {
       if (this.cart.length > 0) {
@@ -25,28 +26,33 @@ export class PosView {
       }
     });
 
-    this.checkoutBtn?.addEventListener('click', () => {
+    this.checkoutBtn?.addEventListener('click', async () => {
       try {
-        const venta = DatabaseService.registrarVenta(this.cart);
+        const venta = await DatabaseService.registrarVenta(this.cart);
         NotificationService.success(`¡Venta #${venta.id_venta} registrada por $${venta.total.toFixed(2)}!`);
         this.cart = [];
         this.renderCart();
-        this.renderCatalog();
-        onSaleCompleted?.();
-      } catch (err: any) {
-        NotificationService.error(err.message || 'Error al procesar la venta.');
+        await this.renderCatalog();
+        await onSaleCompleted?.();
+      } catch (err) {
+        NotificationService.error(err instanceof Error ? err.message : 'Error al procesar la venta.');
       }
     });
   }
 
-  static render(): void {
-    this.renderFilters();
-    this.renderCatalog();
+  static async render(): Promise<void> {
+    await Promise.all([this.renderFilters(), this.renderCatalog()]);
     this.renderCart();
   }
 
-  private static renderFilters(): void {
-    const categories = DatabaseService.getCategorias();
+  private static async renderFilters(): Promise<void> {
+    let categories: Categoria[];
+    try {
+      categories = await DatabaseService.getCategorias();
+    } catch (err) {
+      NotificationService.error(err instanceof Error ? err.message : 'No se pudieron cargar las categorías.');
+      return;
+    }
     const currentVal = this.catFilter.value;
     this.catFilter.innerHTML = '<option value="">Todas las categorías</option>';
     categories.forEach(cat => {
@@ -58,9 +64,18 @@ export class PosView {
     this.catFilter.value = currentVal;
   }
 
-  static renderCatalog(): void {
-    const products = DatabaseService.getProductos();
-    const categories = DatabaseService.getCategorias();
+  static async renderCatalog(): Promise<void> {
+    let products: Producto[];
+    let categories: Categoria[];
+    try {
+      [products, categories] = await Promise.all([
+        DatabaseService.getProductos(),
+        DatabaseService.getCategorias()
+      ]);
+    } catch (err) {
+      NotificationService.error(err instanceof Error ? err.message : 'No se pudo cargar el catálogo.');
+      return;
+    }
     const catMap = new Map(categories.map(c => [c.id_categoria, c.nombre]));
 
     const query = this.searchInput.value.toLowerCase().trim();
@@ -103,8 +118,8 @@ export class PosView {
       card.className = `product-card ${isOutOfStock ? 'out-of-stock' : ''}`;
       card.innerHTML = `
         <div>
-          <div class="product-card-title">${p.nombre}</div>
-          <div class="product-card-cat">${catMap.get(p.id_categoria) || 'Sin Categoría'}</div>
+          <div class="product-card-title">${escapeHtml(p.nombre)}</div>
+          <div class="product-card-cat">${escapeHtml(catMap.get(p.id_categoria) || 'Sin Categoría')}</div>
         </div>
         <div class="product-card-footer">
           <span class="product-card-price">$${p.precio_venta.toFixed(2)}</span>
@@ -178,7 +193,7 @@ export class PosView {
       row.className = 'cart-item';
       row.innerHTML = `
         <div class="cart-item-info">
-          <div class="cart-item-name">${item.producto.nombre}</div>
+          <div class="cart-item-name">${escapeHtml(item.producto.nombre)}</div>
           <div class="cart-item-price">$${item.producto.precio_venta.toFixed(2)} c/u</div>
         </div>
         <div class="cart-item-controls">

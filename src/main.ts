@@ -10,19 +10,16 @@ let currentTab: string = 'pos';
 // Inicialización de componentes UI
 ModalManager.init();
 
-CategoriesView.init(() => {
-  PosView.render();
-  ProductsView.render();
+CategoriesView.init(async () => {
+  await Promise.all([PosView.render(), ProductsView.render()]);
 });
 
-ProductsView.init(() => {
-  PosView.render();
-  CategoriesView.render();
+ProductsView.init(async () => {
+  await Promise.all([PosView.render(), CategoriesView.render()]);
 });
 
-PosView.init(() => {
-  SalesView.render();
-  ProductsView.render();
+PosView.init(async () => {
+  await Promise.all([SalesView.render(), ProductsView.render()]);
 });
 
 SalesView.init();
@@ -50,16 +47,16 @@ tabButtons.forEach(button => {
 function updateActiveView(): void {
   switch (currentTab) {
     case 'pos':
-      PosView.render();
+      void PosView.render();
       break;
     case 'productos':
-      ProductsView.render();
+      void ProductsView.render();
       break;
     case 'categorias':
-      CategoriesView.render();
+      void CategoriesView.render();
       break;
     case 'ventas':
-      SalesView.render();
+      void SalesView.render();
       break;
   }
 }

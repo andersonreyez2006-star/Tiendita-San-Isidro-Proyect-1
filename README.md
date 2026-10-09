@@ -1,8 +1,8 @@
 # 🏪 Tiendita San Isidro - Sistema de Gestión
 
-Sistema web moderno y organizado para el control de inventario, punto de venta (caja) y gestión de ventas de **Tiendita San Isidro**.
+Sistema web para el control de inventario, punto de venta (caja) y gestión de ventas de **Tiendita San Isidro**, con frontend TypeScript, API Node.js/Express y base de datos MySQL/MariaDB.
 
-Desarrollado con **HTML5**, **TypeScript**, **CSS3 Modular** y preparado para despliegue con protocolo seguro **HTTPS** mediante **Cloudflare Tunnel** y base de datos relacional en hosting (**MySQL / MariaDB**).
+El frontend estático y la API se despliegan por separado. Consulta la arquitectura y la guía de despliegue antes de publicar el backend.
 
 ---
 
@@ -34,8 +34,8 @@ Tiendita San Isidro/
 │   │   ├── cart.model.ts     # Modelo del carrito de compras
 │   │   └── index.ts          # Barril unificado de tipos
 │   │
-│   ├── 📁 services/          # Lógica de negocio y persistencia
-│   │   ├── storage.service.ts      # Base de datos local y transacciones de venta
+│   ├── 📁 services/          # Lógica de negocio y acceso a la API
+│   │   ├── storage.service.ts      # Cliente HTTP de la API
 │   │   └── notification.service.ts # Mensajes emergentes (Toast)
 │   │
 │   ├── 📁 ui/                # Vistas y controladores de interfaz de usuario
@@ -50,7 +50,9 @@ Tiendita San Isidro/
 ├── index.html                # Plantilla HTML semántica
 ├── package.json              # Scripts de compilación y servidor
 ├── tsconfig.json             # Configuración de TypeScript
-└── vite.config.ts            # Configuración de Vite con soporte para Cloudflare
+├── server/                   # API Express y conexión MySQL
+├── database/                 # Esquema MySQL/MariaDB
+└── vite.config.ts            # Configuración de Vite y proxy local de API
 ```
 
 ---
@@ -58,18 +60,17 @@ Tiendita San Isidro/
 ## ⚡ Comandos Rápidos
 
 ```powershell
-# 1. Compilar el proyecto TypeScript
+# Instalar dependencias
+npm install
+
+# Configurar .env a partir de .env.example y arrancar backend
+npm run server
+
+# En otra terminal: arrancar frontend local
+npm run dev
+
+# Compilar frontend para producción
 npm run build
-
-# 2. Iniciar el servidor local
-npm run preview
-
-# 3. Compartir por Internet con Cloudflare Tunnel (HTTPS)
-npm run tunnel
 ```
 
----
-
-## 🔒 Acceso Público Seguro
-El túnel de Cloudflare permite acceso mundial con cifrado **HTTPS**:
-👉 Consulta [`docs/GUIA_DESPLIEGUE.md`](file:///c:/Users/ander/OneDrive%20-%20Universidad%20Don%20Bosco/Escritorio/Tiendita%20San%20Isidro/docs/GUIA_DESPLIEGUE.md) para más detalles.
+La API no tiene autenticación de usuarios: no la publiques abierta en Internet. Revisa [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) y [`docs/GUIA_DESPLIEGUE.md`](docs/GUIA_DESPLIEGUE.md) para conocer las rutas, configurar MySQL y proteger el despliegue.
