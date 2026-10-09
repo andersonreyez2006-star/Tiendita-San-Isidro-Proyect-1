@@ -7,7 +7,14 @@
     "dev": "vite --port 5180",
     "build": "tsc && vite build",
     "preview": "vite preview --port 5180 --host",
+    "server": "node server/index.js",
     "tunnel": "& 'C:\\Program Files (x86)\\cloudflared\\cloudflared.exe' tunnel --url http://localhost:5180"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mysql2": "^3.9.7"
   },
   "devDependencies": {
     "typescript": "^5.4.5",
