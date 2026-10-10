@@ -4,6 +4,15 @@
 -- Compatible con MySQL / MariaDB (estándar para hosting web)
 -- ==========================================================
 
+-- 0. Tabla: Usuarios
+-- Almacena las cuentas y hashes de contraseña para iniciar sesión
+CREATE TABLE IF NOT EXISTS usuarios (
+    id_usuario INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_usuario VARCHAR(32) NOT NULL UNIQUE,
+    password_hash VARCHAR(200) NOT NULL,
+    creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- 1. Tabla: Categorias
 -- Agrupa los productos de forma limpia
 CREATE TABLE IF NOT EXISTS categorias (

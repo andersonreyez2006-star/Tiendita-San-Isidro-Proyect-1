@@ -12,6 +12,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   try {
     response = await fetch(`${API_URL}${path}`, {
       ...options,
+      credentials: 'include',
       headers: {
         ...(options?.body ? { 'Content-Type': 'application/json' } : {}),
         ...options?.headers
@@ -89,5 +90,35 @@ export class DatabaseService {
         }))
       })
     });
+  }
+}
+
+export interface AuthUser {
+  id_usuario: number;
+  nombre_usuario: string;
+}
+
+export class AuthService {
+  static async getSession(): Promise<AuthUser | null> {
+    const result = await request<{ user: AuthUser | null }>('/auth/session');
+    return result.user;
+  }
+
+  static login(nombre_usuario: string, contrasena: string): Promise<{ user: AuthUser }> {
+    return request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ nombre_usuario, contrasena })
+    });
+  }
+
+  static register(nombre_usuario: string, contrasena: string): Promise<{ user: AuthUser }> {
+    return request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ nombre_usuario, contrasena })
+    });
+  }
+
+  static logout(): Promise<void> {
+    return request('/auth/logout', { method: 'POST' });
   }
 }

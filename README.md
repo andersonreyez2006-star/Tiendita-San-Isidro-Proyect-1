@@ -63,7 +63,8 @@ Tiendita San Isidro/
 # Instalar dependencias
 npm install
 
-# Configurar .env a partir de .env.example y arrancar backend
+# Configurar .env a partir de .env.example; en local se genera una clave de sesión temporal
+# Importar database/schema.sql y arrancar backend
 npm run server
 
 # En otra terminal: arrancar frontend local
@@ -73,4 +74,4 @@ npm run dev
 npm run build
 ```
 
-La API no tiene autenticación de usuarios: no la publiques abierta en Internet. Revisa [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) y [`docs/GUIA_DESPLIEGUE.md`](docs/GUIA_DESPLIEGUE.md) para conocer las rutas, configurar MySQL y proteger el despliegue.
+La API requiere sesión para todas las operaciones de tienda. Se permiten registros públicos y cada cuenta nueva puede administrar categorías, productos e historial de ventas; comparte el enlace solo si aceptas ese nivel de acceso. Revisa [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) y [`docs/GUIA_DESPLIEGUE.md`](docs/GUIA_DESPLIEGUE.md) para preparar MySQL y el despliegue en Vercel/Railway.
