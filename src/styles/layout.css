@@ -30,6 +30,20 @@ body {
   overflow: hidden;
 }
 
+.privacy-link {
+  margin: 1rem 1.5rem 1.25rem;
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.privacy-link a {
+  color: var(--text-muted);
+}
+
+.privacy-link a:hover {
+  color: var(--primary);
+}
+
 .auth-brand {
   padding: 1.5rem 1.5rem 0;
 }
