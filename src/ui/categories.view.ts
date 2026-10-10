@@ -3,6 +3,7 @@ import { NotificationService } from '../services/notification.service';
 import { ModalManager } from './modals';
 import { Categoria, Producto } from '../types';
 import { escapeHtml } from './html';
+import { renderDataError } from './data-error';
 
 export class CategoriesView {
   private static tableBody = document.getElementById('categories-table-body') as HTMLElement;
@@ -40,7 +41,8 @@ export class CategoriesView {
         DatabaseService.getProductos()
       ]);
     } catch (err) {
-      NotificationService.error(err instanceof Error ? err.message : 'No se pudieron cargar las categorías.');
+      const message = err instanceof Error ? err.message : 'No se pudieron cargar las categorías.';
+      renderDataError(this.tableBody, message, () => void this.render(), 4);
       return;
     }
 

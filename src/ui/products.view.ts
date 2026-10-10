@@ -3,6 +3,7 @@ import { NotificationService } from '../services/notification.service';
 import { Categoria, Producto } from '../types';
 import { ModalManager } from './modals';
 import { escapeHtml } from './html';
+import { renderDataError } from './data-error';
 
 export class ProductsView {
   private static tableBody = document.getElementById('products-table-body') as HTMLElement;
@@ -104,7 +105,8 @@ export class ProductsView {
         DatabaseService.getCategorias()
       ]);
     } catch (err) {
-      NotificationService.error(err instanceof Error ? err.message : 'No se pudieron cargar los productos.');
+      const message = err instanceof Error ? err.message : 'No se pudieron cargar los productos.';
+      renderDataError(this.tableBody, message, () => void this.render(), 7);
       return;
     }
     const catMap = new Map(categories.map(c => [c.id_categoria, c.nombre]));

@@ -3,6 +3,7 @@ import { ModalManager } from './modals';
 import { Venta } from '../types';
 import { NotificationService } from '../services/notification.service';
 import { escapeHtml } from './html';
+import { renderDataError } from './data-error';
 
 export class SalesView {
   private static tableBody = document.getElementById('sales-table-body') as HTMLElement;
@@ -17,7 +18,8 @@ export class SalesView {
     try {
       ventas = await DatabaseService.getVentas();
     } catch (err) {
-      NotificationService.error(err instanceof Error ? err.message : 'No se pudieron cargar las ventas.');
+      const message = err instanceof Error ? err.message : 'No se pudieron cargar las ventas.';
+      renderDataError(this.tableBody, message, () => void this.render(), 4);
       return;
     }
     const totalAcumulado = ventas.reduce((sum, v) => sum + v.total, 0);

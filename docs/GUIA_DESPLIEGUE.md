@@ -6,7 +6,7 @@ Esta guía explica cómo ejecutar la aplicación de forma local, cómo compartir
 
 ## Ejecución local
 
-Necesitas Node.js y una instancia MySQL/MariaDB accesible. Importa `database/schema.sql` en una base de datos antes de iniciar la API.
+Necesitas Node.js y una instancia MySQL/MariaDB accesible. Importa `database/schema.sql` en una base de datos antes de iniciar la API. Para XAMPP con los valores por defecto, `.env.example` ya indica host `127.0.0.1`, puerto `3306`, usuario `root` y contraseña vacía; confirma que tu configuración de MySQL coincida antes de usar esos valores.
 
 ```powershell
 # Instalar dependencias

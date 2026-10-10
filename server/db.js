@@ -13,6 +13,7 @@ export const pool = mysql.createPool({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME,
+  connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT || 5000),
   waitForConnections: true,
   connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 10),
   decimalNumbers: true,

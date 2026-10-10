@@ -235,6 +235,13 @@ app.post('/api/ventas', asyncRoute(async (req, res) => {
 }));
 
 app.use((error, _req, res, _next) => {
+  if (['ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND', 'ER_ACCESS_DENIED_ERROR', 'ER_BAD_DB_ERROR'].includes(error.code)) {
+    console.error(`MySQL no está disponible (${error.code}). Revisa las variables DB_* y la conexión de red.`);
+    res.status(503).json({
+      error: 'El backend no puede conectarse a MySQL. Revisa DB_HOST, DB_PORT, DB_USER, DB_PASSWORD y DB_NAME.'
+    });
+    return;
+  }
   if (error.code === 'ER_NO_REFERENCED_ROW_2') {
     res.status(400).json({ error: 'La categoría seleccionada no existe.' });
     return;
