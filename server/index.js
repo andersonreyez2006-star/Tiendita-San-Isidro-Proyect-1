@@ -1,15 +1,30 @@
 import 'dotenv/config';
+import { createHmac, randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
 import express from 'express';
 import cors from 'cors';
 import { pool } from './db.js';
+import { promisify } from 'node:util';
 
 const app = express();
 const port = Number(process.env.PORT || 3001);
+const isProduction = process.env.NODE_ENV === 'production';
+const sessionSecret = process.env.SESSION_SECRET || (isProduction ? '' : randomBytes(32).toString('hex'));
+const scrypt = promisify(scryptCallback);
+const sessionCookie = 'tiendita_session';
 const allowedOrigins = (process.env.CORS_ORIGINS || '')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+if (isProduction && (!sessionSecret || sessionSecret.length < 32)) {
+  throw new Error('SESSION_SECRET debe tener al menos 32 caracteres en producción.');
+}
+
+if (isProduction && allowedOrigins.length === 0) {
+  throw new Error('Configura CORS_ORIGINS con el dominio exacto del frontend en producción.');
+}
+
+app.set('trust proxy', 1);
 app.use(cors({
   origin(origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -17,13 +32,180 @@ app.use(cors({
       return;
     }
     callback(new Error('Origen no permitido por la configuración CORS.'));
-  }
+  },
+  credentials: true
 }));
 app.use(express.json({ limit: '32kb' }));
 
 function asyncRoute(handler) {
   return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 }
+
+function rateLimit({ limit, windowMs }) {
+  const clients = new Map();
+  return (req, res, next) => {
+    const now = Date.now();
+    const key = req.ip || req.socket.remoteAddress || 'unknown';
+    const entry = clients.get(key);
+    if (!entry || now >= entry.resetAt) {
+      if (clients.size > 5000) {
+        for (const [client, record] of clients) {
+          if (now >= record.resetAt) clients.delete(client);
+        }
+      }
+      clients.set(key, { count: 1, resetAt: now + windowMs });
+      next();
+      return;
+    }
+    if (entry.count >= limit) {
+      res.status(429).json({ error: 'Demasiados intentos. Espera un momento e inténtalo de nuevo.' });
+      return;
+    }
+    entry.count += 1;
+    next();
+  };
+}
+
+function cookieOptions() {
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60 * 1000
+  };
+}
+
+function getCookie(req, name) {
+  const cookie = req.headers.cookie?.split(';').map(part => part.trim())
+    .find(part => part.startsWith(`${name}=`));
+  if (!cookie) return '';
+  try {
+    return decodeURIComponent(cookie.slice(name.length + 1));
+  } catch {
+    return '';
+  }
+}
+
+function createSession(userId) {
+  const payload = Buffer.from(JSON.stringify({
+    userId,
+    expiresAt: Date.now() + cookieOptions().maxAge
+  })).toString('base64url');
+  const signature = createHmac('sha256', sessionSecret).update(payload).digest('base64url');
+  return `${payload}.${signature}`;
+}
+
+function readSession(req) {
+  const [payload, signature, extra] = getCookie(req, sessionCookie).split('.');
+  if (!payload || !signature || extra) return null;
+
+  const expected = createHmac('sha256', sessionSecret).update(payload).digest();
+  let actual;
+  try {
+    actual = Buffer.from(signature, 'base64url');
+  } catch {
+    return null;
+  }
+  if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return null;
+
+  try {
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    if (!Number.isSafeInteger(data.userId) || data.userId <= 0 || data.expiresAt <= Date.now()) return null;
+    return data.userId;
+  } catch {
+    return null;
+  }
+}
+
+async function findSessionUser(req) {
+  const userId = readSession(req);
+  if (!userId) return null;
+  const [rows] = await pool.execute(
+    'SELECT id_usuario, nombre_usuario FROM usuarios WHERE id_usuario = ?',
+    [userId]
+  );
+  return rows[0] || null;
+}
+
+function publicUser(user) {
+  return { id_usuario: user.id_usuario, nombre_usuario: user.nombre_usuario };
+}
+
+function authLimiter(limit, windowMs) {
+  return rateLimit({ limit, windowMs });
+}
+
+app.get('/api/auth/session', asyncRoute(async (req, res) => {
+  const user = await findSessionUser(req);
+  res.json({ user: user ? publicUser(user) : null });
+}));
+
+app.post('/api/auth/register', authLimiter(5, 60 * 60 * 1000), asyncRoute(async (req, res) => {
+  const username = typeof req.body?.nombre_usuario === 'string' ? req.body.nombre_usuario.trim() : '';
+  const password = typeof req.body?.contrasena === 'string' ? req.body.contrasena : '';
+  if (!/^[\p{L}\p{N}_.-]{3,32}$/u.test(username)) {
+    throw httpError(400, 'El usuario debe tener entre 3 y 32 caracteres (letras, números, punto, guion o guion bajo).');
+  }
+  if (password.length < 12 || password.length > 128) {
+    throw httpError(400, 'La contraseña debe tener entre 12 y 128 caracteres.');
+  }
+
+  const salt = randomBytes(16);
+  const passwordHash = await scrypt(password, salt, 64);
+  const storedHash = `${salt.toString('hex')}:${Buffer.from(passwordHash).toString('hex')}`;
+  const [result] = await pool.execute(
+    'INSERT INTO usuarios (nombre_usuario, password_hash) VALUES (?, ?)',
+    [username, storedHash]
+  );
+  const user = { id_usuario: result.insertId, nombre_usuario: username };
+  res.cookie(sessionCookie, createSession(user.id_usuario), cookieOptions());
+  res.status(201).json({ user: publicUser(user) });
+}));
+
+app.post('/api/auth/login', authLimiter(10, 15 * 60 * 1000), asyncRoute(async (req, res) => {
+  const username = typeof req.body?.nombre_usuario === 'string' ? req.body.nombre_usuario.trim() : '';
+  const password = typeof req.body?.contrasena === 'string' ? req.body.contrasena : '';
+  const [rows] = await pool.execute(
+    'SELECT id_usuario, nombre_usuario, password_hash FROM usuarios WHERE nombre_usuario = ?',
+    [username]
+  );
+  const user = rows[0];
+  const [saltHex, hashHex] = (user?.password_hash || '').split(':');
+  let passwordMatches = false;
+  if (/^[a-f\d]{32}$/i.test(saltHex || '') && /^[a-f\d]{128}$/i.test(hashHex || '')) {
+    const actualHash = Buffer.from(await scrypt(password, Buffer.from(saltHex, 'hex'), 64));
+    const expectedHash = Buffer.from(hashHex, 'hex');
+    passwordMatches = timingSafeEqual(actualHash, expectedHash);
+  } else {
+    await scrypt(password, Buffer.alloc(16), 64);
+  }
+  if (!user || !passwordMatches || password.length > 128) {
+    throw httpError(401, 'Usuario o contraseña incorrectos.');
+  }
+
+  res.cookie(sessionCookie, createSession(user.id_usuario), cookieOptions());
+  res.json({ user: publicUser(user) });
+}));
+
+app.post('/api/auth/logout', (_req, res) => {
+  res.clearCookie(sessionCookie, cookieOptions());
+  res.status(204).end();
+});
+
+app.use('/api', asyncRoute(async (req, _res, next) => {
+  if (req.path.startsWith('/auth/') || req.path === '/auth/session' || req.path === '/health') {
+    next();
+    return;
+  }
+  const user = await findSessionUser(req);
+  if (!user) {
+    next(httpError(401, 'Inicia sesión para continuar.'));
+    return;
+  }
+  req.user = publicUser(user);
+  next();
+}));
 
 function httpError(status, message) {
   const error = new Error(message);
@@ -251,7 +433,11 @@ app.use((error, _req, res, _next) => {
     return;
   }
   if (error.code === 'ER_DUP_ENTRY') {
-    res.status(409).json({ error: 'Ya existe un registro con esos datos.' });
+    res.status(409).json({ error: 'El nombre de usuario ya está en uso.' });
+    return;
+  }
+  if (error.code === 'ER_NO_SUCH_TABLE') {
+    res.status(503).json({ error: 'Falta una tabla de la base de datos. Importa database/schema.sql y reinicia el backend.' });
     return;
   }
   if (error.message?.includes('Origen no permitido')) {

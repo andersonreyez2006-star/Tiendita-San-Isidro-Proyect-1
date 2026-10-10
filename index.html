@@ -10,7 +10,34 @@
   <link rel="stylesheet" href="./src/styles/main.css">
 </head>
 <body>
-  <div id="app">
+  <section id="auth-screen" class="auth-screen">
+    <div class="card auth-card">
+      <div class="brand auth-brand">
+        <div class="logo-icon">🏪</div>
+        <div>
+          <h1 class="brand-title">Tiendita San Isidro</h1>
+          <p class="brand-subtitle">Acceso al sistema de gestión</p>
+        </div>
+      </div>
+      <form id="auth-form">
+        <h2 id="auth-title">Iniciar sesión</h2>
+        <p id="auth-description" class="section-desc">Ingresa con tu cuenta para continuar.</p>
+        <div class="form-group">
+          <label for="auth-username">Usuario</label>
+          <input type="text" id="auth-username" autocomplete="username" minlength="3" maxlength="32" required>
+        </div>
+        <div class="form-group">
+          <label for="auth-password">Contraseña</label>
+          <input type="password" id="auth-password" autocomplete="current-password" minlength="12" maxlength="128" required>
+        </div>
+        <p id="auth-message" class="auth-message" role="alert" aria-live="polite"></p>
+        <button id="auth-submit" type="submit" class="btn btn-primary btn-block">Iniciar sesión</button>
+        <button id="auth-toggle" type="button" class="auth-toggle">¿No tienes cuenta? Regístrate</button>
+      </form>
+    </div>
+  </section>
+
+  <div id="app" hidden>
     <!-- Barra Superior -->
     <header class="navbar">
       <div class="brand">
@@ -19,6 +46,10 @@
           <h1 class="brand-title">Tiendita San Isidro</h1>
           <p class="brand-subtitle">Control de Inventario y Ventas</p>
         </div>
+      </div>
+      <div class="auth-user-controls">
+        <span id="auth-user"></span>
+        <button id="logout-button" class="btn btn-secondary btn-sm" type="button">Cerrar sesión</button>
       </div>
     </header>
 
