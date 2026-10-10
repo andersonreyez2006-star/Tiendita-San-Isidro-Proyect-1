@@ -49,6 +49,24 @@ El alta de una venta bloquea los productos seleccionados y registra encabezado, 
 4. En producción, Vercel aloja el frontend y las funciones `/api/*`; estas acceden directamente a Neon usando `DATABASE_URL`.
 5. Mantén `DATABASE_URL`, `SESSION_SECRET` y las credenciales OAuth de Gmail como variables privadas del entorno del backend. No uses el prefijo `VITE_` para secretos.
 
+## Configuración de producción
+
+Configura estas variables en el entorno del servidor de Vercel (por ejemplo, Production). Ninguna credencial secreta debe incluirse en el frontend, en archivos versionados ni en el chat.
+
+| Variable | Uso |
+|---|---|
+| `DATABASE_URL` | Cadena de conexión PostgreSQL de Neon, utilizada por el pool del servidor. |
+| `SESSION_SECRET` | Secreto aleatorio usado para firmar las sesiones. Debe ser privado y estable entre despliegues. |
+| `APP_BASE_URL` | URL HTTPS pública de la aplicación; se usa como origen de los enlaces de verificación y restablecimiento. |
+| `GOOGLE_CLIENT_ID` | ID del cliente OAuth de Google autorizado para Gmail API. |
+| `GOOGLE_CLIENT_SECRET` | Secreto del mismo cliente OAuth; solo se consume en el servidor. |
+| `GOOGLE_REFRESH_TOKEN` | Token de actualización OAuth con permiso `https://www.googleapis.com/auth/gmail.send`; el servidor lo intercambia por access tokens temporales. |
+| `GOOGLE_SENDER_EMAIL` | Dirección Gmail autorizada que aparece como remitente; debe corresponder a la cuenta que concedió el permiso OAuth. |
+
+Para enviar correo, `server/email.js` solicita un access token a Google usando el client ID, client secret y refresh token, y luego envía el mensaje con Gmail API. El access token es temporal y se renueva en el servidor; no se configura manualmente. El refresh token debe obtenerse con el cliente OAuth propio de la aplicación (no con las credenciales predeterminadas de OAuth 2.0 Playground, cuyos tokens pueden caducar a las 24 horas). Si el consentimiento OAuth permanece en modo de prueba, Google puede caducar el refresh token después de siete días. Revocar el permiso, cambiar las credenciales del cliente o dejar el token inactivo también puede interrumpir el envío.
+
+Al cambiar variables de entorno en Vercel se requiere un nuevo despliegue para que las funciones las reciban. El proyecto de Vercel debe estar conectado al repositorio y a la rama de producción prevista; sin un despliegue de producción no existe una versión pública que pueda utilizar el navegador. Una vez desplegado, verifica `/api/health` y prueba el envío de verificación y recuperación con una cuenta controlada.
+
 El registro es abierto y cada cuenta registrada tiene permisos completos, por decisión de producto. Esto permite que cualquier persona que encuentre la URL registre una cuenta y modifique inventario, categorías y ventas. No uses datos reales de un negocio en un sitio público sin añadir controles de acceso más estrictos, verificación de usuarios y recuperación de cuentas.
 
 La desconexión de Railway en el código no borra ni detiene un servicio Railway existente. Los datos de Railway tampoco se migran automáticamente a Neon.
