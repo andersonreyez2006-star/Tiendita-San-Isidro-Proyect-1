@@ -1,4 +1,4 @@
-export default async function proxyToRailway(req, res) {
+export async function proxyToRailway(req, res) {
   const apiUrl = process.env.RAILWAY_API_URL;
   if (!apiUrl) {
     res.status(503).json({ error: 'Configura RAILWAY_API_URL en las variables de entorno de Vercel.' });
@@ -45,10 +45,8 @@ export default async function proxyToRailway(req, res) {
   }
   res.status(upstream.status);
   res.setHeader('cache-control', 'no-store');
-  for (const name of ['content-type']) {
-    const value = upstream.headers.get(name);
-    if (value) res.setHeader(name, value);
-  }
+  const contentType = upstream.headers.get('content-type');
+  if (contentType) res.setHeader('content-type', contentType);
   const cookie = upstream.headers.get('set-cookie');
   if (cookie) res.setHeader('set-cookie', cookie);
   if (req.method === 'HEAD' || upstream.status === 204) {
