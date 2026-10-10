@@ -96,6 +96,8 @@ export class DatabaseService {
 export interface AuthUser {
   id_usuario: number;
   nombre_usuario: string;
+  correo_electronico: string | null;
+  correo_verificado: boolean;
 }
 
 export class AuthService {
@@ -111,11 +113,47 @@ export class AuthService {
     });
   }
 
-  static register(nombre_usuario: string, contrasena: string): Promise<{ user: AuthUser }> {
+  static register(
+    nombre_usuario: string,
+    contrasena: string,
+    correo_electronico: string
+  ): Promise<{ user: AuthUser; emailVerificationSent: boolean }> {
     return request('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ nombre_usuario, contrasena })
+      body: JSON.stringify({ nombre_usuario, contrasena, correo_electronico })
     });
+  }
+
+  static requestPasswordReset(correo_electronico: string): Promise<{ message: string }> {
+    return request('/auth/password/forgot', {
+      method: 'POST',
+      body: JSON.stringify({ correo_electronico })
+    });
+  }
+
+  static resetPassword(token: string, contrasena: string): Promise<{ message: string }> {
+    return request('/auth/password/reset', {
+      method: 'POST',
+      body: JSON.stringify({ token, contrasena })
+    });
+  }
+
+  static verifyEmail(token: string): Promise<{ message: string }> {
+    return request('/auth/email/verify', {
+      method: 'POST',
+      body: JSON.stringify({ token })
+    });
+  }
+
+  static updateRecoveryEmail(correo_electronico: string): Promise<{ message: string }> {
+    return request('/auth/account/email', {
+      method: 'POST',
+      body: JSON.stringify({ correo_electronico })
+    });
+  }
+
+  static resendEmailVerification(): Promise<{ message: string }> {
+    return request('/auth/account/email/resend', { method: 'POST' });
   }
 
   static logout(): Promise<void> {

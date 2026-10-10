@@ -1,3 +1,3 @@
-import { proxyToRailway } from '../../server/vercel-proxy.js';
+import app from '../../server/app.js';
 
-export default proxyToRailway;
+export default app;

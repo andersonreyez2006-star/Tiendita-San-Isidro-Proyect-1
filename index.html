@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
   <title>Tiendita San Isidro - Sistema de Gestión</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,6 +23,10 @@
       <form id="auth-form">
         <h2 id="auth-title">Iniciar sesión</h2>
         <p id="auth-description" class="section-desc">Ingresa con tu cuenta para continuar.</p>
+        <div id="auth-email-group" class="form-group" hidden>
+          <label for="auth-email">Correo electrónico</label>
+          <input type="email" id="auth-email" autocomplete="email" maxlength="254">
+        </div>
         <div class="form-group">
           <label for="auth-username">Usuario</label>
           <input type="text" id="auth-username" autocomplete="username" minlength="3" maxlength="32" required>
@@ -32,8 +37,83 @@
         </div>
         <p id="auth-message" class="auth-message" role="alert" aria-live="polite"></p>
         <button id="auth-submit" type="submit" class="btn btn-primary btn-block">Iniciar sesión</button>
+        <button id="auth-forgot" type="button" class="auth-toggle">¿Olvidaste tu contraseña?</button>
         <button id="auth-toggle" type="button" class="auth-toggle">¿No tienes cuenta? Regístrate</button>
       </form>
+    </div>
+  </section>
+
+  <section id="recovery-screen" class="auth-screen" hidden>
+    <div class="card auth-card">
+      <div class="brand auth-brand">
+        <div class="logo-icon">🏪</div>
+        <div>
+          <h1 class="brand-title">Tiendita San Isidro</h1>
+          <p class="brand-subtitle">Recuperación de cuenta</p>
+        </div>
+      </div>
+      <div class="auth-form-content">
+        <div id="recovery-request-pane">
+          <h2>Recuperar contraseña</h2>
+          <p class="section-desc">Escribe el correo verificado de tu cuenta. Si coincide, te enviaremos un enlace.</p>
+          <form id="recovery-request-form">
+            <div class="form-group">
+              <label for="recovery-email">Correo electrónico</label>
+              <input type="email" id="recovery-email" autocomplete="email" maxlength="254" required>
+            </div>
+            <button id="recovery-request-submit" type="submit" class="btn btn-primary btn-block">Enviar enlace</button>
+          </form>
+        </div>
+        <div id="recovery-reset-pane" hidden>
+          <h2>Establecer nueva contraseña</h2>
+          <p class="section-desc">Elige una contraseña nueva de al menos 12 caracteres.</p>
+          <form id="recovery-reset-form">
+            <input type="hidden" id="recovery-token">
+            <div class="form-group">
+              <label for="recovery-password">Nueva contraseña</label>
+              <input type="password" id="recovery-password" autocomplete="new-password" minlength="12" maxlength="128" required>
+            </div>
+            <button id="recovery-reset-submit" type="submit" class="btn btn-primary btn-block">Actualizar contraseña</button>
+          </form>
+        </div>
+        <div id="recovery-verify-pane" hidden>
+          <h2>Verificar correo electrónico</h2>
+          <p class="section-desc">Confirma que tienes acceso a este correo para habilitar la recuperación de cuenta.</p>
+          <form id="recovery-verify-form">
+            <input type="hidden" id="verification-token">
+            <button id="verification-submit" type="submit" class="btn btn-primary btn-block">Confirmar correo</button>
+          </form>
+        </div>
+        <p id="recovery-message" class="auth-message" role="status" aria-live="polite"></p>
+        <button id="recovery-back" type="button" class="auth-toggle">Volver al inicio de sesión</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="account-screen" class="auth-screen" hidden>
+    <div class="card auth-card">
+      <div class="brand auth-brand">
+        <div class="logo-icon">🏪</div>
+        <div>
+          <h1 class="brand-title">Tiendita San Isidro</h1>
+          <p class="brand-subtitle">Correo de recuperación</p>
+        </div>
+      </div>
+      <div class="auth-form-content">
+        <h2>Configurar correo</h2>
+        <p class="section-desc">Agrega un correo al que tengas acceso y verifícalo. Solo los correos verificados permiten recuperar la contraseña.</p>
+        <form id="account-email-form">
+          <div class="form-group">
+            <label for="account-email">Correo electrónico</label>
+            <input type="email" id="account-email" autocomplete="email" maxlength="254" required>
+          </div>
+          <p id="account-email-status" class="section-desc"></p>
+          <p id="account-email-message" class="auth-message" role="status" aria-live="polite"></p>
+          <button id="account-email-submit" type="submit" class="btn btn-primary btn-block">Guardar y enviar verificación</button>
+        </form>
+        <button id="account-email-resend" type="button" class="auth-toggle" hidden>Reenviar verificación</button>
+        <button id="account-back" type="button" class="auth-toggle">Volver a la tienda</button>
+      </div>
     </div>
   </section>
 
@@ -49,6 +129,7 @@
       </div>
       <div class="auth-user-controls">
         <span id="auth-user"></span>
+        <button id="account-email-button" class="btn btn-secondary btn-sm" type="button">Mi correo</button>
         <button id="logout-button" class="btn btn-secondary btn-sm" type="button">Cerrar sesión</button>
       </div>
     </header>
