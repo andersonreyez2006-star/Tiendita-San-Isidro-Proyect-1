@@ -23,7 +23,7 @@ npm run dev
 npm run build
 ```
 
-La interfaz estará en `http://localhost:5180`. Verifica la API y la conexión SQL en `http://localhost:3001/api/health`. `npm run preview` sirve el frontend compilado, pero no incluye el proxy de desarrollo; configura `VITE_API_URL` para apuntar a la URL pública de la API antes de compilar.
+La interfaz estará en `http://localhost:5180`. Verifica la API y la conexión SQL en `http://localhost:3001/api/health`. Para abrirla desde un teléfono en la misma Wi-Fi, usa la IP local de la PC (por ejemplo, `http://192.168.11.157:5180`) y agrega ese origen a `CORS_ORIGINS` en `.env`; reemplaza la IP de ejemplo por la dirección actual de la PC y reinicia `npm run server`. `npm run preview` sirve el frontend compilado, pero no incluye el proxy de desarrollo; configura `VITE_API_URL` para apuntar a la URL pública de la API antes de compilar.
 
 ## Despliegue
 
