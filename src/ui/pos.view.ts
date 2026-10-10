@@ -2,6 +2,7 @@ import { DatabaseService } from '../services/storage.service';
 import { NotificationService } from '../services/notification.service';
 import { CartItem, Categoria, Producto } from '../types';
 import { escapeHtml } from './html';
+import { renderDataError } from './data-error';
 
 export class PosView {
   private static productsGrid = document.getElementById('pos-products-grid') as HTMLElement;
@@ -73,7 +74,8 @@ export class PosView {
         DatabaseService.getCategorias()
       ]);
     } catch (err) {
-      NotificationService.error(err instanceof Error ? err.message : 'No se pudo cargar el catálogo.');
+      const message = err instanceof Error ? err.message : 'No se pudo cargar el catálogo.';
+      renderDataError(this.productsGrid, message, () => void this.renderCatalog());
       return;
     }
     const catMap = new Map(categories.map(c => [c.id_categoria, c.nombre]));

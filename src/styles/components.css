@@ -66,6 +66,21 @@
   font-size: 0.875rem;
 }
 
+.data-error {
+  display: grid;
+  justify-items: start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.data-error p {
+  margin: 0;
+}
+
 /* Botones */
 .btn {
   font-family: inherit;
