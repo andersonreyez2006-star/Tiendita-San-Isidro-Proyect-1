@@ -9,7 +9,7 @@ La aplicación sigue una arquitectura cliente/API/base de datos. El navegador no
 - `server/db.js`: pool MySQL compartido por el servidor, configurado únicamente con variables de entorno.
 - `database/schema.sql`: tablas, claves foráneas y cuentas de usuario que deben existir antes de iniciar la API.
 - `vite.config.ts`: durante desarrollo reenvía `/api` desde Vite a `http://localhost:3001`.
-- `api/[...path].js`: en Vercel reenvía `/api/*` a la API privada alojada en Railway, manteniendo el navegador en el mismo origen.
+- `api/`: define funciones Vercel explícitas para las rutas `/api/*`; usan `server/vercel-proxy.js` para reenviar solicitudes a Railway y mantener el navegador en el mismo origen.
 
 ## API
 
