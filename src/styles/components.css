@@ -169,7 +169,7 @@ label {
   color: var(--text-main);
 }
 
-input[type="text"], input[type="number"], select {
+input[type="text"], input[type="email"], input[type="number"], select {
   width: 100%;
   padding: 0.65rem 0.85rem;
   border: 1px solid var(--border);
@@ -190,12 +190,24 @@ input[type="password"] {
   outline: none;
 }
 
+input[type="email"]:focus, input[type="password"]:focus, input[type="text"]:focus, input[type="number"]:focus, select:focus {
+  border-color: var(--primary);
+}
+
 input:focus, select:focus {
   border-color: var(--primary);
 }
 
 .auth-card form {
   padding-top: 1.25rem;
+}
+
+.auth-form-content {
+  padding: 1.5rem;
+}
+
+.auth-form-content form {
+  padding: 1.25rem 0 0;
 }
 
 .auth-card h2 {
@@ -211,6 +223,10 @@ input:focus, select:focus {
   margin-bottom: 0.75rem;
   color: var(--danger);
   font-size: 0.85rem;
+}
+
+.auth-message[role="status"] {
+  color: var(--text-muted);
 }
 
 .auth-toggle {

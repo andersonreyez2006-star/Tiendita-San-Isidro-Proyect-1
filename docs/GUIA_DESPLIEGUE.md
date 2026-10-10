@@ -1,42 +1,37 @@
 # Guía de Ejecución y Alojamiento - Tiendita San Isidro
 
----
-
 ## Ejecución local
 
-Necesitas Node.js y una instancia MySQL/MariaDB accesible. Importa `database/schema.sql` en una base de datos antes de iniciar la API. Para XAMPP con los valores por defecto, `.env.example` ya indica host `127.0.0.1`, puerto `3306`, usuario `root` y contraseña vacía; confirma que tu configuración de MySQL coincida antes de usar esos valores.
+Necesitas Node.js y una base PostgreSQL de Neon. En Neon, ejecuta `database/schema.sql` en una base nueva o, si ya existe la base, ejecuta una sola vez `database/migrations/001_password_recovery.sql`. Copia `.env.example` como `.env` y completa `DATABASE_URL` y `SESSION_SECRET`. Para enviar correos, agrega también las credenciales OAuth de Gmail API y `APP_BASE_URL`. El archivo `.env` está excluido de Git.
 
 ```powershell
 # Instalar dependencias
 npm install
 
-# Copiar .env.example a .env y editar DB_HOST, DB_USER, DB_PASSWORD y DB_NAME
-# Iniciar el backend en una terminal
+# Iniciar API y frontend, cada uno en su terminal
 npm run server
-
-# En otra terminal, frontend con proxy /api hacia el backend y acceso en la Wi-Fi local
 npm run dev
 
 # Compilar el frontend
 npm run build
 ```
 
-La interfaz estará en `http://localhost:5180`; no uses **Go Live** de Live Server, porque no compila TypeScript ni reenvía `/api`. Para abrirla desde un teléfono en la misma Wi-Fi, usa la IP local de la PC (por ejemplo, `http://192.168.11.157:5180`). Si la IP cambia, actualiza esa IP en `CORS_ORIGINS` del `.env` y reinicia `npm run server`. Verifica la conexión SQL en `http://localhost:3001/api/health`. `npm run preview` sirve el frontend compilado, pero no incluye el proxy de desarrollo; configura `VITE_API_URL` para apuntar a la URL HTTPS de la API antes de compilar.
+La interfaz local estará en `http://localhost:5180`; no uses **Go Live** de Live Server, porque no ejecuta la API. El Vite dev server reenvía `/api` a `http://localhost:3001`. Comprueba la conexión con `http://localhost:3001/api/health`. Para ver el sitio desde otro dispositivo en la misma red, abre la IP local de la computadora y permite el puerto 5180 en el firewall; configura ese origen en `CORS_ORIGINS` si no es el mismo host.
 
-## Alojamiento
+## Vercel + Neon
 
-La configuración prevista usa Vercel para el frontend y proxy `/api`, y Railway para Express + MySQL en una red privada:
+1. Crea un proyecto PostgreSQL en Neon con el plan que hayas elegido y ejecuta `database/schema.sql` desde su SQL Editor. La app inicia vacía; importar datos de Railway requiere una migración aparte.
+2. En Neon, copia el connection string recomendado para Node.js. No lo pegues en el chat ni en el código.
+3. En Vercel importa este repositorio desde GitHub. Usa el directorio raíz predeterminado, el comando de compilación `npm run build` y el directorio de salida `dist`.
+4. Habilita **Gmail API** en Google Cloud. Configura la pantalla de consentimiento OAuth y crea un cliente OAuth 2.0. Autoriza el alcance `https://www.googleapis.com/auth/gmail.send` para la cuenta remitente y obtén su refresh token mediante un flujo OAuth seguro. Una API key no autoriza a enviar correo. No pegues secretos en el chat ni los incluyas en el frontend.
+5. En **Project Settings → Environment Variables**, configura `DATABASE_URL`, `SESSION_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN`, `GOOGLE_SENDER_EMAIL` y `APP_BASE_URL` (el origen HTTPS público de Vercel). Añádelas a los entornos necesarios y no uses el prefijo `VITE_` para secretos.
+6. Despliega o redepliega el proyecto. La web y las rutas `/api/*` se sirven desde Vercel; no hace falta `RAILWAY_API_URL`, un dominio de API en Railway ni `CORS_ORIGINS` para el mismo origen.
+7. Prueba `/api/health`, registro y verificación del correo, recuperación de contraseña, inicio de sesión y las operaciones de categorías, productos y ventas. La venta usa una transacción PostgreSQL para que encabezado, detalles y descuento de existencias se confirmen o reviertan juntos.
 
-1. En Railway crea un proyecto en el plan **Free**, agrega un servicio MySQL y confirma que tenga un volumen persistente montado en `/var/lib/mysql`. No habilites upgrades ni planes de pago.
-2. Agrega al mismo proyecto un servicio de API desde este repositorio. Usa `npm ci` como comando de instalación y `npm start` como inicio. Crea un dominio público solo para la API; la base debe seguir privada.
-3. En el servicio API define `NODE_ENV=production`, `SESSION_SECRET` (una cadena aleatoria de al menos 32 caracteres), `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` y `CORS_ORIGINS`. Referencia las variables del servicio MySQL, por ejemplo `DB_HOST=${{MySQL.MYSQLHOST}}`, `DB_PORT=${{MySQL.MYSQLPORT}}`, `DB_USER=${{MySQL.MYSQLUSER}}`, `DB_PASSWORD=${{MySQL.MYSQLPASSWORD}}` y `DB_NAME=${{MySQL.MYSQLDATABASE}}`. Reemplaza `MySQL` por el nombre exacto del servicio.
-4. Inicializa la base importando `database/schema.sql` en la instancia Railway. Esto crea también la tabla `usuarios`; no copies el archivo `.env` local ni expongas las variables SQL al frontend.
-5. En Vercel importa este repositorio desde GitHub, selecciona `main` como rama de producción, el comando `npm run build` y el directorio `dist`. Configura `VITE_API_URL=/api` y `RAILWAY_API_URL=https://<dominio-publico-de-la-api>` (sin `/api` al final). Las funciones explícitas de `api/` reenvían solicitudes a Railway sin exponer la URL del backend al navegador.
-6. Después del primer despliegue, vuelve a Railway y configura `CORS_ORIGINS` con el origen HTTPS exacto de Vercel, por ejemplo `https://tiendita-ejemplo.vercel.app`. Redepliega la API y verifica `/api/health`, registro, inicio de sesión y operaciones de datos.
-7. Para enlazar GitHub, autoriza la aplicación oficial de Vercel en tu cuenta y selecciona este repositorio. Los siguientes cambios en `main` se desplegarán automáticamente. No compartas contraseñas ni tokens en el chat.
+Cuando una app OAuth externa permanece en modo de prueba, Google puede hacer que los refresh tokens expiren después de siete días. Para uso público continuo, completa los requisitos de publicación/verificación que Google aplique al proyecto y al alcance solicitado.
 
-**Límites y costos:** Railway Free ofrece actualmente $1 USD de crédito de uso mensual y hasta 500 MB de volumen; al agotar los límites las aplicaciones pueden detenerse. No garantiza servicio siempre activo. Vercel Hobby es gratuito solo para uso personal/no comercial y pausa ciertas funciones al superar sus cuotas. No autorices un upgrade, una prueba que pida pago ni agregues método de pago si tu condición es no incurrir en cargos. Si esta tienda se usará comercialmente o necesita estar disponible 24/7, estos planes gratuitos no son una opción fiable/permitida; habrá que elegir un proveedor y plan compatible antes de publicarla.
+`DATABASE_URL`, `SESSION_SECRET` y las credenciales OAuth deben mantenerse privadas. No incluyas contraseñas ni tokens en el frontend ni en commits. Neon puede suspender o limitar recursos según las cuotas del plan; Vercel Hobby también tiene condiciones de uso y límites propios. Revisa los límites vigentes y no habilites facturación si quieres evitar cargos.
 
-El registro de cuentas es público y cada cuenta tiene permisos completos: puede cambiar categorías, productos, existencias y ventas. No publiques datos reales hasta que aceptes ese riesgo. Los registros locales de XAMPP no se migran con el despliegue; haz una exportación/importación separada solo después de decidir qué datos quieres subir.
+El código ya no depende de Railway. Este cambio no pausa, elimina ni desconecta desde el panel un proyecto Railway existente, y no transfiere automáticamente sus datos. Conserva el proyecto/volumen hasta verificar Neon y decidir explícitamente qué hacer con esos datos.
 
-Nunca guardes credenciales SQL en variables `VITE_*`, el frontend o el repositorio. Para desarrollo local sigue usando XAMPP y la configuración de la primera sección.
+El registro de cuentas es público y cada cuenta tiene permisos completos: puede cambiar categorías, productos, existencias y ventas. No publiques datos reales hasta que aceptes ese riesgo.

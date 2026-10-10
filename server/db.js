@@ -1,21 +1,17 @@
-import mysql from 'mysql2/promise';
+import 'dotenv/config';
+import ws from 'ws';
+import { neonConfig, Pool } from '@neondatabase/serverless';
 
-const required = ['DB_HOST', 'DB_USER', 'DB_NAME'];
-const missing = required.filter((key) => !process.env[key]);
-
-if (missing.length > 0) {
-  throw new Error(`Faltan variables de entorno requeridas: ${missing.join(', ')}`);
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error('Falta la variable de entorno DATABASE_URL para conectar con Neon.');
 }
 
-export const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME,
-  connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT || 5000),
-  waitForConnections: true,
-  connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 10),
-  decimalNumbers: true,
-  charset: 'utf8mb4'
+neonConfig.webSocketConstructor = ws;
+
+export const pool = new Pool({
+  connectionString,
+  max: Number(process.env.DB_CONNECTION_LIMIT || 5),
+  connectionTimeoutMillis: Number(process.env.DB_CONNECT_TIMEOUT || 10000),
+  idleTimeoutMillis: 10000
 });
