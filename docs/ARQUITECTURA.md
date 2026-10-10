@@ -32,4 +32,4 @@ El alta de una venta bloquea los productos seleccionados y registra encabezado, 
 3. MySQL aplica las claves foráneas y persiste los cambios para todos los dispositivos que usen la misma API.
 4. Para producción, el frontend estático y la API deben tener HTTPS, el servidor requiere acceso de red a MySQL y `CORS_ORIGINS` debe contener el origen real del sitio.
 
-La API no incorpora autenticación de usuarios. No se debe publicar abierta en Internet: protégela con autenticación/proxy de acceso (por ejemplo, Cloudflare Access) antes de habilitar operaciones de escritura.
+La API no incorpora autenticación de usuarios. No se debe publicar abierta en Internet: protégela con autenticación o un proxy de acceso antes de habilitar operaciones de escritura.

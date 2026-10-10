@@ -18,7 +18,7 @@ Tiendita San Isidro/
 │
 ├── 📁 docs/                  # Documentación técnica
 │   ├── ARQUITECTURA.md       # Explicación de la arquitectura modular y flujo de datos
-│   └── GUIA_DESPLIEGUE.md    # Guía para ejecución local y túnel Cloudflare HTTPS
+│   └── GUIA_DESPLIEGUE.md    # Guía de ejecución local y alojamiento
 │
 ├── 📁 src/                   # Código fuente de la aplicación
 │   ├── 📁 styles/            # Hojas de estilo CSS organizadas por propósito

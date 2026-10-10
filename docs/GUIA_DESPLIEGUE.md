@@ -1,6 +1,4 @@
-# 🚀 Guía de Despliegue y Ejecución - Tiendita San Isidro
-
-Esta guía explica cómo ejecutar la aplicación de forma local, cómo compartirla públicamente por Internet mediante **Cloudflare Tunnel con HTTPS**, y cómo prepararla para tu hosting.
+# Guía de Ejecución y Alojamiento - Tiendita San Isidro
 
 ---
 
@@ -16,23 +14,23 @@ npm install
 # Iniciar el backend en una terminal
 npm run server
 
-# En otra terminal, frontend con proxy /api hacia el backend
+# En otra terminal, frontend con proxy /api hacia el backend y acceso en la Wi-Fi local
 npm run dev
 
 # Compilar el frontend
 npm run build
 ```
 
-La interfaz estará en `http://localhost:5180`. Verifica la API y la conexión SQL en `http://localhost:3001/api/health`. Para abrirla desde un teléfono en la misma Wi-Fi, usa la IP local de la PC (por ejemplo, `http://192.168.11.157:5180`) y agrega ese origen a `CORS_ORIGINS` en `.env`; reemplaza la IP de ejemplo por la dirección actual de la PC y reinicia `npm run server`. `npm run preview` sirve el frontend compilado, pero no incluye el proxy de desarrollo; configura `VITE_API_URL` para apuntar a la URL pública de la API antes de compilar.
+La interfaz estará en `http://localhost:5180`; no uses **Go Live** de Live Server, porque no compila TypeScript ni reenvía `/api`. Para abrirla desde un teléfono en la misma Wi-Fi, usa la IP local de la PC (por ejemplo, `http://192.168.11.157:5180`). Si la IP cambia, actualiza esa IP en `CORS_ORIGINS` del `.env` y reinicia `npm run server`. Verifica la conexión SQL en `http://localhost:3001/api/health`. `npm run preview` sirve el frontend compilado, pero no incluye el proxy de desarrollo; configura `VITE_API_URL` para apuntar a la URL HTTPS de la API antes de compilar.
 
-## Despliegue
+## Alojamiento
 
-Cloudflare Pages publica únicamente el frontend estático. El backend Node.js y MySQL/MariaDB deben estar en servicios desplegados y activos por separado; Pages no ejecuta `server/index.js`.
+El frontend y el backend requieren un hosting que pueda ejecutar la API Node.js y servir los archivos compilados; MySQL/MariaDB puede estar en ese proveedor o en un servicio de base de datos remoto accesible desde el backend.
 
-1. Despliega el backend Node.js desde el repositorio (incluidos `package.json`, `package-lock.json` y `server/`) en un hosting que soporte Node.js, con comando de inicio `npm start`. Configura sus variables `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `PORT` y `CORS_ORIGINS`.
-2. Importa `database/schema.sql` en MySQL/MariaDB. Configura firewall y permisos para que solo el backend llegue a la base de datos.
-3. Protege la API con autenticación o un proxy de acceso antes de exponerla públicamente. La API actual no autentica usuarios; CORS no reemplaza autenticación.
-4. Configura el secreto `VITE_API_URL` en el repositorio de GitHub como la URL HTTPS de la API terminada en `/api` (por ejemplo `https://api.ejemplo.com/api`). El workflow lo usa al compilar el frontend.
-5. Configura `CORS_ORIGINS` con el origen HTTPS del sitio, sin la ruta `/api`, y publica el frontend en Cloudflare Pages.
+1. Despliega el repositorio en un hosting compatible con Node.js, con comando de inicio `npm start`. Configura `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `PORT` y `CORS_ORIGINS` como variables privadas del servicio.
+2. Importa `database/schema.sql` en MySQL/MariaDB y configura firewall y permisos para que solo el backend pueda acceder a la base.
+3. Configura `VITE_API_URL` durante la compilación del frontend con la URL HTTPS de la API terminada en `/api` (por ejemplo `https://api.ejemplo.com/api`).
+4. Sirve el contenido de `dist/` y configura `CORS_ORIGINS` en el backend con el origen HTTPS del frontend.
+5. Protege la API con autenticación antes de hacerla accesible públicamente; la API actual no autentica usuarios y CORS no sustituye autenticación.
 
-No guardes credenciales de base de datos en variables `VITE_*`, archivos del frontend o el repositorio. No uses un túnel temporal de desarrollo como alojamiento permanente.
+No guardes credenciales de base de datos en variables `VITE_*`, archivos del frontend o el repositorio. Para desarrollo en red local, conecta los dispositivos a la misma Wi-Fi y permite en el firewall únicamente los puertos necesarios.
