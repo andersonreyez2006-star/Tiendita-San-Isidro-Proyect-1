@@ -12,7 +12,7 @@ La aplicación sigue una arquitectura cliente/API/base de datos. El navegador no
 - `database/schema.sql`: esquema PostgreSQL para usuarios, correos verificados, tokens temporales, categorías, productos, ventas y detalles.
 - `database/migrations/001_password_recovery.sql`: actualización aditiva para bases ya existentes.
 - `vite.config.ts`: durante desarrollo reenvía `/api` desde Vite a `http://localhost:3001`.
-- `api/`: funciones Vercel que ejecutan la API Express en el mismo origen que el frontend; no llaman a Railway.
+- `api/[...route].js`: función catch-all de Vercel que reenvía todas las rutas `/api/*` a `server/app.js`. Mantiene los endpoints existentes usando una sola función serverless para cumplir el límite del plan Hobby; no llama a Railway.
 
 ## API
 
