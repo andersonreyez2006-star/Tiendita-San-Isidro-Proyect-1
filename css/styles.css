@@ -248,6 +248,7 @@ body {
   letter-spacing: -0.02em;
   line-height: 1.1;
   background: linear-gradient(90deg, var(--text-main) 60%, var(--color-primary) 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

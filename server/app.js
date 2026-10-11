@@ -4,7 +4,7 @@ import express from 'express';
 import cors from 'cors';
 import { pool } from './db.js';
 import { promisify } from 'node:util';
-import { sendAccountLink } from './email.js';
+import { sendAccountLink, verifyEmailSetup } from './email.js';
 
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
@@ -454,6 +454,11 @@ function productInput(body) {
 app.get('/api/health', asyncRoute(async (_req, res) => {
   await pool.query('SELECT 1');
   res.json({ status: 'ok', database: 'connected' });
+}));
+
+app.get('/api/health/email', asyncRoute(async (_req, res) => {
+  const result = await verifyEmailSetup();
+  res.status(result.ok ? 200 : 500).json(result);
 }));
 
 app.get('/api/categorias', asyncRoute(async (_req, res) => {

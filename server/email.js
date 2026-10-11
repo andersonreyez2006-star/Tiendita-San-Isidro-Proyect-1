@@ -88,3 +88,43 @@ export async function sendAccountLink({ to, token, purpose }) {
     throw new Error(`Gmail API no pudo enviar el mensaje (${response.status}).`);
   }
 }
+
+export async function verifyEmailSetup() {
+  const presence = {
+    GOOGLE_CLIENT_ID: Boolean(process.env.GOOGLE_CLIENT_ID),
+    GOOGLE_CLIENT_SECRET: Boolean(process.env.GOOGLE_CLIENT_SECRET),
+    GOOGLE_REFRESH_TOKEN: Boolean(process.env.GOOGLE_REFRESH_TOKEN),
+    GOOGLE_SENDER_EMAIL: Boolean(process.env.GOOGLE_SENDER_EMAIL),
+    APP_BASE_URL: Boolean(process.env.APP_BASE_URL)
+  };
+  const missing = Object.entries(presence)
+    .filter(([, v]) => !v)
+    .map(([k]) => k);
+  if (missing.length) {
+    return {
+      ok: false,
+      error: `Faltan variables en Vercel: ${missing.join(', ')}`,
+      presence
+    };
+  }
+  try {
+    await getGoogleAccessToken({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      refreshToken: process.env.GOOGLE_REFRESH_TOKEN
+    });
+    return {
+      ok: true,
+      message: 'Google OAuth conectó y renovó el token exitosamente.',
+      senderEmail: process.env.GOOGLE_SENDER_EMAIL,
+      appBaseUrl: process.env.APP_BASE_URL,
+      presence
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      error: `Google OAuth error: ${err.message}`,
+      presence
+    };
+  }
+}
