@@ -488,8 +488,23 @@ app.post('/api/categorias', asyncRoute(async (req, res) => {
 
 app.delete('/api/categorias/:id', asyncRoute(async (req, res) => {
   const id = positiveId(req.params.id, 'Categoría');
-  const result = await pool.query('DELETE FROM categorias WHERE id_categoria = $1', [id]);
-  if (result.rowCount === 0) throw httpError(404, 'La categoría no existe.');
+
+  const { rows: cat } = await pool.query(
+    'SELECT id_categoria, nombre FROM categorias WHERE id_categoria = $1',
+    [id]
+  );
+  if (cat.length === 0) throw httpError(404, 'La categoría no existe.');
+
+  const { rows: prods } = await pool.query(
+    'SELECT COUNT(*)::int AS total FROM productos WHERE id_categoria = $1',
+    [id]
+  );
+  const totalProductos = prods[0]?.total || 0;
+  if (totalProductos > 0) {
+    throw httpError(409, `No se puede eliminar la categoría "${cat[0].nombre}" porque tiene ${totalProductos} producto(s) asociado(s). Reasigna o elimina los productos primero.`);
+  }
+
+  await pool.query('DELETE FROM categorias WHERE id_categoria = $1', [id]);
   res.status(204).end();
 }));
 
@@ -544,8 +559,23 @@ app.put('/api/productos/:id', asyncRoute(async (req, res) => {
 
 app.delete('/api/productos/:id', asyncRoute(async (req, res) => {
   const id = positiveId(req.params.id, 'Producto');
-  const result = await pool.query('DELETE FROM productos WHERE id_producto = $1', [id]);
-  if (result.rowCount === 0) throw httpError(404, 'El producto no existe.');
+
+  const { rows: prod } = await pool.query(
+    'SELECT id_producto, nombre FROM productos WHERE id_producto = $1',
+    [id]
+  );
+  if (prod.length === 0) throw httpError(404, 'El producto no existe.');
+
+  const { rows: sales } = await pool.query(
+    'SELECT COUNT(*)::int AS total FROM detalle_venta WHERE id_producto = $1',
+    [id]
+  );
+  const totalVentas = sales[0]?.total || 0;
+  if (totalVentas > 0) {
+    throw httpError(409, `No se puede eliminar el producto "${prod[0].nombre}" porque ya tiene ${totalVentas} venta(s) registrada(s) en el historial.`);
+  }
+
+  await pool.query('DELETE FROM productos WHERE id_producto = $1', [id]);
   res.status(204).end();
 }));
 
@@ -658,11 +688,11 @@ app.use((error, _req, res, _next) => {
     return;
   }
   if (error.code === '23503' && error.constraint === 'fk_productos_categorias') {
-    res.status(400).json({ error: 'La categoría seleccionada no existe.' });
+    res.status(409).json({ error: 'Operación denegada: la categoría tiene productos asignados o no existe.' });
     return;
   }
   if (error.code === '23503') {
-    res.status(409).json({ error: 'No se puede eliminar porque hay registros relacionados.' });
+    res.status(409).json({ error: 'No se puede eliminar porque hay registros relacionados en la base de datos.' });
     return;
   }
   if (error.code === '23505') {

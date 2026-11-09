@@ -13,10 +13,12 @@ export class ProductsView {
   private static inputPrice = document.getElementById('prod-price') as HTMLInputElement;
   private static inputStock = document.getElementById('prod-stock') as HTMLInputElement;
   private static modalTitle = document.getElementById('modal-product-title') as HTMLElement;
+  private static onUpdateCallback?: () => void | Promise<void>;
 
   private static editingId: number | null = null;
 
   static init(onUpdate?: () => void | Promise<void>): void {
+    this.onUpdateCallback = onUpdate;
     document.getElementById('open-new-product-modal')?.addEventListener('click', () => {
       void this.openModal();
     });
@@ -50,7 +52,7 @@ export class ProductsView {
 
         ModalManager.closeProductModal();
         await this.render();
-        await onUpdate?.();
+        await this.onUpdateCallback?.();
       } catch (err) {
         NotificationService.error(err instanceof Error ? err.message : 'No se pudo guardar el producto.');
       }
@@ -159,6 +161,7 @@ export class ProductsView {
             await DatabaseService.deleteProducto(p.id_producto);
             NotificationService.success(`Producto "${p.nombre}" eliminado.`);
             await this.render();
+            await this.onUpdateCallback?.();
           } catch (err) {
             NotificationService.error(err instanceof Error ? err.message : 'No se pudo eliminar el producto.');
           }

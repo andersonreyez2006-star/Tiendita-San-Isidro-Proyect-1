@@ -9,8 +9,10 @@ export class CategoriesView {
   private static tableBody = document.getElementById('categories-table-body') as HTMLElement;
   private static form = document.getElementById('form-category') as HTMLFormElement;
   private static inputName = document.getElementById('cat-name') as HTMLInputElement;
+  private static onUpdateCallback?: () => void | Promise<void>;
 
   static init(onUpdate?: () => void | Promise<void>): void {
+    this.onUpdateCallback = onUpdate;
     document.getElementById('open-new-category-modal')?.addEventListener('click', () => {
       ModalManager.openCategoryModal();
     });
@@ -25,7 +27,7 @@ export class CategoriesView {
         NotificationService.success(`Categoría "${name}" creada exitosamente.`);
         ModalManager.closeCategoryModal();
         await this.render();
-        await onUpdate?.();
+        await this.onUpdateCallback?.();
       } catch (err) {
         NotificationService.error(err instanceof Error ? err.message : 'No se pudo crear la categoría.');
       }
@@ -75,11 +77,17 @@ export class CategoriesView {
       `;
 
       tr.querySelector(`[data-delete-cat="${cat.id_categoria}"]`)?.addEventListener('click', async () => {
+        if (prodCount > 0) {
+          NotificationService.error(`No puedes eliminar la categoría "${cat.nombre}" porque tiene ${prodCount} producto(s) asignado(s). Reasigna o elimina los productos primero.`);
+          return;
+        }
+
         if (confirm(`¿Eliminar la categoría "${cat.nombre}"?`)) {
           try {
             await DatabaseService.deleteCategoria(cat.id_categoria);
             NotificationService.success(`Categoría "${cat.nombre}" eliminada.`);
             await this.render();
+            await this.onUpdateCallback?.();
           } catch (err) {
             NotificationService.error(err instanceof Error ? err.message : 'No se pudo eliminar la categoría.');
           }
